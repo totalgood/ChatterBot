@@ -1,136 +1,44 @@
 # -*- encoding: utf-8 -*-
 from __future__ import unicode_literals
 from chatterbot.adapters.io import IOAdapter
-import requests
-from requests_oauthlib import OAuth1
+from chatterbot.conversation import Statement
+import twitter
+
+try:
+    from queue import Queue
+except ImportError:
+    # Use the python 2 queue import
+    from Queue import Queue
 
 
 class TwitterAdapter(IOAdapter):
 
-    def __init__(self, twitter):
+    def __init__(self, **kwargs):
 
-        self.REQUEST_TOKEN_URL = "https://api.twitter.com/oauth/request_token"
-        self.AUTHORIZE_URL = "https://api.twitter.com/oauth/authorize?oauth_token="
-        self.ACCESS_TOKEN_URL = "https://api.twitter.com/oauth/access_token"
+        self.api = twitter.Api(
+            consumer_key=kwargs["twitter_consumer_key"],
+            consumer_secret=kwargs["twitter_consumer_secret"],
+            access_token_key=kwargs["twitter_access_token"],
+            access_token_secret=kwargs["twitter_access_token_secret"]
+        )
 
-        self.consumer_key = twitter["CONSUMER_KEY"]
-        self.consumer_secret = twitter["CONSUMER_SECRET"]
-        self.oauth_token = None
-        self.oauth_token_secret = None
-
-        # Resource owner variables used during authorization process
-        self.resource_owner_key = None
-        self.resource_owner_secret = None
-
-        self.oauth = None
-
-        # An exisitng oauth token can be passed in to skip this step.
-        if "OAUTH_TOKEN" in twitter and "OAUTH_TOKEN_SECRET" in twitter:
-            self.oauth_token = twitter["OAUTH_TOKEN"]
-            self.oauth_token_secret = twitter["OAUTH_TOKEN_SECRET"]
-            self.oauth = self.get_oauth()
-
-    def get_authorization_url(self):
-        from urlparse import parse_qs
-
-        # Get request token
-        oauth = OAuth1(self.consumer_key, client_secret=self.consumer_secret)
-        response = requests.post(url=self.REQUEST_TOKEN_URL, auth=oauth)
-        credentials = parse_qs(response.content)
-
-        self.resource_owner_key = credentials.get("oauth_token")[0]
-        self.resource_owner_secret = credentials.get("oauth_token_secret")[0]
-
-        # Return the url to authorize request token
-        return self.AUTHORIZE_URL + self.resource_owner_key
-
-    def verify(self, verifier):
-        from urlparse import parse_qs
-
-        oauth = OAuth1(self.consumer_key,
-                       client_secret=self.consumer_secret,
-                       resource_owner_key=self.resource_owner_key,
-                       resource_owner_secret=self.resource_owner_secret,
-                       verifier=verifier)
-
-        # Get the access token
-        response = requests.post(url=self.ACCESS_TOKEN_URL, auth=oauth)
-        credentials = parse_qs(response.content)
-
-        self.oauth_token = credentials.get("oauth_token")[0]
-        self.oauth_token_secret = credentials.get("oauth_token_secret")[0]
-        self.oauth = self.get_oauth()
-
-    def get_oauth(self):
-        oauth = OAuth1(self.consumer_key,
-                    client_secret=self.consumer_secret,
-                    resource_owner_key=self.oauth_token,
-                    resource_owner_secret=self.oauth_token_secret)
-        return oauth
-
-    def get_timeline(self):
-        """
-        Get status list
-        """
-        endpoint = "https://api.twitter.com/1.1/statuses/user_timeline.json"
-        response = requests.get(url=timeline_endpoint, auth=self.oauth)
-
-        return response.json()
-
-    def get_name(self):
-        endpoint = "https://api.twitter.com/1.1/account/verify_credentials.json"
-        response = requests.get(url=endpoint, auth=self.oauth)
-        return response.json()["screen_name"]
+        self.mention_queue = Queue()
+        self.direct_message_queue = Queue()
 
     def post_update(self, message):
-        # Post an update
-        endpoint = "https://api.twitter.com/1.1/statuses/update.json"
-
-        data = {
-            "status": message
-        }
-
-        response = requests.post(url=endpoint, data=data, auth=self.oauth)
-
-        return response.json()
+        return self.api.PostUpdate(message)
 
     def favorite(self, tweet_id):
-        endpoint = "https://api.twitter.com/1.1/favorites/create.json"
-
-        data = {
-            "id": tweet_id
-        }
-
-        response = requests.post(url=endpoint, data=data, auth=self.oauth)
-
-        return response.json()
+        return self.api.CreateFavorite(id=tweet_id)
 
     def follow(self, username):
-        endpoint = "https://api.twitter.com/1.1/friendships/create.json"
-
-        data = {
-            "follow": True,
-            "screen_name": username
-        }
-
-        response = requests.post(url=endpoint, data=data, auth=self.oauth)
-
-        return response.json()
+        return self.api.CreateFriendship(screen_name=username)
 
     def get_list_users(self, username, slug):
-        endpoint = "https://api.twitter.com/1.1/lists/members.json"
-        endpoint += "?slug=" + slug + "&owner_screen_name=" + username
-
-        response = requests.get(url=endpoint, auth=self.oauth)
-        
-        return list(str(user["screen_name"]) for user in response.json()["users"])
+        return self.api.GetListMembers(None, slug, owner_screen_name=username)
 
     def get_mentions(self):
-        endpoint = "https://api.twitter.com/1.1/statuses/mentions_timeline.json"
-
-        response = requests.get(url=endpoint, auth=self.oauth)
-
-        return response.json()
+        return self.api.GetMentions()
 
     def search(self, q, count=1, result_type="mixed"):
         url = "https://api.twitter.com/1.1/search/tweets.json"
@@ -164,27 +72,6 @@ class TwitterAdapter(IOAdapter):
 
         return non_replies
 
-    def get_activity_data(self):
-        """
-        Counts the activity frequency for each day of the week.
-        """
-        timeline = get_timeline() #count=500
-        daily_sum = {
-            "Sun": 0,
-            "Mon": 0,
-            "Tue": 0,
-            "Wed": 0,
-            "Thu": 0,
-            "Fri": 0,
-            "Sat": 0,
-        }
-
-        for post in timeline:
-            day = post["created_at"].split(" ")[0]
-            daily_sum[day] += 1
-
-        return daily_sum
-
     def reply(self, tweet_id, message):
         """
         Reply to a tweet
@@ -207,7 +94,7 @@ class TwitterAdapter(IOAdapter):
         from random import choice
 
         # Get the list of robots
-        robots =  get_list_users(username, slug=slug)
+        robots = get_list_users(username, slug=slug)
 
         for robot in robots:
             message = ("@" + robot + " " + choice(greetings)).strip("\n")
@@ -217,3 +104,31 @@ class TwitterAdapter(IOAdapter):
             else:
                 sleep(3600-time() % 3600)
                 t.statuses.update(status=message)
+
+    def has_responeded_to_message(self, message_id):
+        # TODO
+        pass
+
+    def process_input(self):
+        """
+        This method should check twitter for new mentions and
+        return them as Statement objects.
+        """
+        # Download a list of recent mentions
+        mentions = self.get_mentions()
+
+        print "MENTIONS:", mentions
+
+        for mention_data in mentions:
+
+            mention = Statement()
+
+            # Check if a response has been made
+            if self.has_responeded_to_message(mention.id)
+
+            # If a response has not been made, add the mention to the mention queue
+            self.mention_queue.put()
+
+    def process_response(self, input_statement):
+        pass
+
