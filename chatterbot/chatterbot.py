@@ -5,12 +5,20 @@ from .adapters.output import OutputAdapter
 from .conversation import Statement, Response
 from .utils.queues import ResponseQueue
 from .utils.module_loading import import_module
+import datetime
 import logging
 
 
 class ChatBot(object):
 
-    def __init__(self, name, **kwargs):
+    # number of seconds to wait before responding to a chat, on average
+    bot_response_time = 3
+    # maximum amount of time to wait before disassociating a response with a statement
+    human_response_time = 10
+    # average amount of time to wait before spontaneously attmpting to start a conversation
+    spontaneous_statement_time = 1000
+
+    def __init__(self, name, bot_response_time=bot_response_time, **kwargs):
         self.name = name
         kwargs['name'] = name
 
@@ -147,7 +155,11 @@ class ChatBot(object):
         :param input_item: An input value.
         :returns: Statement -- the response to the input.
         """
+        # use absolute datetimes to facilitate storage along with statements
+        self.last_human_start_time = datetime.datetime.now()
         input_statement = self.input.process_input(input_item)
+        self.last_human_finish_time = datetime.datetime.now()
+        self.last_human_response_time = (self.last_human_finish_time - self.last_human_start_time).total_seconds()
         self.logger.info(u'Recieved input statement: {}'.format(input_statement.text))
 
         self.storage.generate_base_query(self)
@@ -169,9 +181,13 @@ class ChatBot(object):
         if input_statement.extra_data:
             response.extra_data.update(input_statement.extra_data)
 
-        previous_statement = self.get_last_response_statement()
+        if self.last_human_response_time < self.human_response_time:
+            previous_statement = self.get_last_response_statement()  else None
+        else:
+            previous_statement = None
 
         if previous_statement:
+            # be careful about this. sometimes the human says something spontaneous that is not a response to anything!
             input_statement.add_response(
                 Response(previous_statement.text)
             )
