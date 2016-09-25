@@ -182,7 +182,7 @@ class ChatBot(object):
             response.extra_data.update(input_statement.extra_data)
 
         if self.last_human_response_time < self.human_response_time:
-            previous_statement = self.get_last_response_statement()  else None
+            previous_statement = self.get_last_response_statement()
         else:
             previous_statement = None
 
