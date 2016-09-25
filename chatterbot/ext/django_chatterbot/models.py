@@ -1,17 +1,19 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 
 class BaseModel(models.Model):
-    created_date = models.DateTimeField(auto_now_add=True)
-    modified_date = models.DateTimeField(auto_now=True)
+    created = models.DateTimeField(auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True)
 
     class Meta:
         abstract = True
 
 
-class User(BaseModel):
+class ChatUser(BaseModel):
     """A short (<255) chat message, tweet, forum post, etc"""
 
+    user = models.ForeignKey(User, null=False)
     username = models.CharField(
         unique=True,
         blank=False,
@@ -24,25 +26,25 @@ class User(BaseModel):
         max_length=128,
     )
     gender = models.CharField(
-        help="Categorical variable to facilitate personality learning",
+        help_text="Categorical variable to facilitate personality learning",
         blank=True,
         null=False,
         max_length=32,
     )
     chat_age = models.FloatField(
-        help="Scalar between 0 and 100 estimating age of a user based solely on their chat style, word choice.",
+        help_text="Scalar between 0 and 100 estimating age of a user based solely on their chat style, word choice.",
         blank=True,
         null=True,
         max_length=32,
     )
     kindness = models.FloatField(
-        help="Probability (0-1) of making a kind statement",
+        help_text="Probability (0-1) of making a kind statement",
         default=0.,
         null=False,
         blank=True,
     )
     hurtfulness = models.FloatField(
-        help="Probability (0-1) of making an unkind, cruel, hurtful statement",
+        help_text="Probability (0-1) of making an unkind, cruel, hurtful statement",
         default=0.
     )
 
@@ -50,16 +52,55 @@ class User(BaseModel):
         return '{}: {}'.format(self.username, self.full_name)
 
 
+class Score(BaseModel):
+    """Multidimensional score including sentiment (valence and intensity), readability, topic vectors, slangness, age, etc"""
+    positivity = models.FloatField(
+        help_text="Positive valence (emotion) in a statement (VADER by Hutto, C.J. & Gilbert)",
+        default=0.
+    )
+    negativity = models.FloatField(
+        help_text="Negative valence (emotion) in a statement (VADER by Hutto, C.J. & Gilbert)",
+        default=0.
+    )
+    neutrality = models.FloatField(
+        help_text="Negative valence (emotion) in a statement (VADER by Hutto, C.J. & Gilbert)",
+        default=0.
+    )
+    intensity = models.FloatField(
+        help_text="Emotional intensity (from VADER by Hutto, C.J. & Gilbert)",
+        default=0.
+    )
+    kindness = models.FloatField(
+        help_text="Probability (0-1) of making a kind statement",
+        default=0.
+    )
+    sarcasm = models.FloatField(
+        help_text="Lack of sincerity in a statement",
+        default=0.
+    )
+    readability = models.FloatField(
+        help_text="Probability (0-1) of making a kind statement",
+        default=0.
+    )
+    chat_age = models.FloatField(
+        help_text="Oldfashioned-ness, negative hipness, in mean age of the utterance distribution in time",
+        default=0.
+    )
+
+    def __str__(self):
+        s = 'emotion: ({} +{} -{}) * {}'.format(self.neutrality, self.postivity, self.negativity, self.intensity)
+        s += ', kindness: (+{} -{})'.format(self.kindness, self.sarcasm)
+        s += ', age: (+{} +{})'.format(self.readability, self.sarcasm)
+
+        return s
+
+
 class Statement(BaseModel):
     """A short (<255) chat message, tweet, forum post, etc"""
 
-    user = models.ForeignKey('User')
-    text = models.CharField(
-        unique=False,
-        blank=False,
-        null=False,
-        max_length=255
-    )
+    chat_user = models.ForeignKey(ChatUser, null=True)
+    score = models.ForeignKey(Score, null=True)
+    text = models.CharField(max_length=255)
 
     def __str__(self):
         if len(self.text.strip()) > 60:
@@ -92,7 +133,10 @@ class Response(BaseModel):
 
     unique_together = (('statement', 'response'),)
 
-    occurrence = models.PositiveIntegerField(default=0)
+    occurrence = models.PositiveIntegerField(
+        help_text='Number of times this statement has been used to respond to the statement in `in_response_to`.',
+        default=0,
+        )
 
     def __str__(self):
         s = self.statement.text if len(self.statement.text) <= 20 else self.statement.text[:17] + '...'
