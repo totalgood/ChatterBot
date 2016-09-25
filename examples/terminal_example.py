@@ -7,7 +7,7 @@ import logging
 
 # Create a new instance of a ChatBot
 bot = ChatBot("Terminal",
-    storage_adapter="chatterbot.adapters.storage.JsonFileStorageAdapter",
+    storage_adapter="chatterbot.adapters.storage.django_storage.DjangoStorageAdapter",
     logic_adapters=[
         "chatterbot.adapters.logic.MathematicalEvaluation",
         "chatterbot.adapters.logic.TimeLogicAdapter",

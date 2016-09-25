@@ -2,7 +2,7 @@ from .adapters.storage import StorageAdapter
 from .adapters.logic import LogicAdapter, MultiLogicAdapter
 from .adapters.input import InputAdapter
 from .adapters.output import OutputAdapter
-from .conversation import Statement, Response
+from .conversation import Response  # , Statement
 from .utils.queues import ResponseQueue
 from .utils.module_loading import import_module
 import logging
@@ -15,20 +15,20 @@ class ChatBot(object):
         kwargs['name'] = name
 
         storage_adapter = kwargs.get('storage_adapter',
-            'chatterbot.adapters.storage.JsonFileStorageAdapter'
-        )
+                                     'chatterbot.adapters.storage.django_storage.DjangoStorageAdapter',
+                                     )
 
         logic_adapters = kwargs.get('logic_adapters', [
-            'chatterbot.adapters.logic.ClosestMatchAdapter'
+            'chatterbot.adapters.logic.ClosestMatchAdapter',
         ])
 
         input_adapter = kwargs.get('input_adapter',
-            'chatterbot.adapters.input.VariableInputTypeAdapter'
-        )
+                                   'chatterbot.adapters.input.VariableInputTypeAdapter',
+                                   )
 
         output_adapter = kwargs.get('output_adapter',
-            'chatterbot.adapters.output.OutputFormatAdapter'
-        )
+                                    'chatterbot.adapters.output.OutputFormatAdapter',
+                                    )
 
         # The last 10 statement inputs and outputs
         self.recent_statements = ResponseQueue(maxsize=10)

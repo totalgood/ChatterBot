@@ -1,11 +1,61 @@
 from django.db import models
 
 
-class Statement(models.Model):
+class BaseModel(models.Model):
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_date = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+class User(BaseModel):
     """A short (<255) chat message, tweet, forum post, etc"""
 
-    text = models.CharField(
+    username = models.CharField(
         unique=True,
+        blank=False,
+        null=False,
+        max_length=64,
+    )
+    full_name = models.CharField(
+        blank=True,
+        null=False,
+        max_length=128,
+    )
+    gender = models.CharField(
+        help="Categorical variable to facilitate personality learning",
+        blank=True,
+        null=False,
+        max_length=32,
+    )
+    chat_age = models.FloatField(
+        help="Scalar between 0 and 100 estimating age of a user based solely on their chat style, word choice.",
+        blank=True,
+        null=True,
+        max_length=32,
+    )
+    kindness = models.FloatField(
+        help="Probability (0-1) of making a kind statement",
+        default=0.,
+        null=False,
+        blank=True,
+    )
+    hurtfulness = models.FloatField(
+        help="Probability (0-1) of making an unkind, cruel, hurtful statement",
+        default=0.
+    )
+
+    def __str__(self):
+        return '{}: {}'.format(self.username, self.full_name)
+
+
+class Statement(BaseModel):
+    """A short (<255) chat message, tweet, forum post, etc"""
+
+    user = models.ForeignKey('User')
+    text = models.CharField(
+        unique=False,
         blank=False,
         null=False,
         max_length=255
@@ -19,7 +69,7 @@ class Statement(models.Model):
         return '<empty>'
 
 
-class Response(models.Model):
+class Response(BaseModel):
     """Connection between a response and the statement that triggered it
 
     Comparble to a ManyToMany "through" table, but without the M2M indexing/relations.

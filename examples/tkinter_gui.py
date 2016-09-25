@@ -9,6 +9,7 @@ import time
 
 from chatterbot import ChatBot
 
+
 class TkinterGUIExample(tk.Tk):
 
     def __init__(self, *args, **kwargs):
@@ -18,7 +19,7 @@ class TkinterGUIExample(tk.Tk):
         tk.Tk.__init__(self, *args, **kwargs)
 
         self.chatbot = ChatBot("No Output",
-            storage_adapter="chatterbot.adapters.storage.JsonFileStorageAdapter",
+            storage_adapter="chatterbot.adapters.storage.django_storage.DjangoStorageAdapter",
             logic_adapters=[
                 "chatterbot.adapters.logic.ClosestMatchAdapter"
             ],
