@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import time
+
 from fuzzywuzzy import fuzz
 
 from .base_match import BaseMatchAdapter
@@ -6,19 +8,21 @@ from .base_match import BaseMatchAdapter
 
 class ClosestMatchAdapter(BaseMatchAdapter):
     """
-    The ClosestMatchAdapter logic adapter creates a response by 
+    The ClosestMatchAdapter logic adapter creates a response by
     using fuzzywuzzy's process class to extract the most similar
     response to the input. This adapter selects a response to an
     input statement by selecting the closest known matching
     statement based on the Levenshtein Distance between the text
     of each statement.
     """
+    bot_response_time = 1.0
 
     def get(self, input_statement):
         """
         Takes a statement string and a list of statement strings.
         Returns the closest matching statement from the list.
         """
+        t0 = time.time()
         statement_list = self.context.storage.get_response_statements()
 
         if not statement_list:
@@ -46,4 +50,6 @@ class ClosestMatchAdapter(BaseMatchAdapter):
         # Convert the confidence integer to a percent
         confidence /= 100.0
 
+        t1 = time.time()
+        time.sleep(min(max(getattr(self.context, 'bot_response_time', self.bot_response_time) - t1 + t0, 0), 600))
         return confidence, closest_match
