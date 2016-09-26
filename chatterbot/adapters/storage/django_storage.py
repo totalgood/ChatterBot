@@ -114,7 +114,7 @@ class DjangoStorageAdapter(StorageAdapter):
         statements = StatementModel.objects.filter(text=statement_text)
 
         responses = ResponseModel.objects.filter(
-            Q(statement__text=statement_text) | Q(response__text=statement_text)
+            Q(statement__text=statement_text) | Q(response_to__text=statement_text)
         )
 
         responses.delete()

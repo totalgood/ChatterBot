@@ -131,7 +131,7 @@ class Response(BaseModel):
         related_name='+'
     )
 
-    unique_together = (('statement', 'response'),)
+    unique_together = (('statement', 'response_to'),)
 
     occurrence = models.PositiveIntegerField(
         help_text='Number of times this statement has been used to respond to the statement in `in_response_to`.',

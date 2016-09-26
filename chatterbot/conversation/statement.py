@@ -37,7 +37,7 @@ class Statement(object):
         """
         self.extra_data[key] = value
 
-    def add_response_to(self, response_to):
+    def add_response(self, response_to):
         """
         Add the response to the list if it does not already exist.
         """
@@ -57,6 +57,7 @@ class Statement(object):
 
         # FIXME: This won't scale!
         #        Instead, self.in_response_to should be a collections.Counter() dict
+        updated = False
         for index in range(0, len(self.in_response_to)):
             if response_to.text == self.in_response_to[index].text:
                 self.in_response_to[index].occurrence += 1
