@@ -126,7 +126,7 @@ class Response(BaseModel):
         related_name='in_response_to'
     )
 
-    response = models.ForeignKey(
+    response_to = models.ForeignKey(
         'Statement',
         related_name='+'
     )
@@ -139,7 +139,7 @@ class Response(BaseModel):
         )
 
     def __str__(self):
-        s = self.statement.text if len(self.statement.text) <= 20 else self.statement.text[:17] + '...'
+        s = self.response_to.text if len(self.response_to.text) <= 40 else self.response.text[:37] + '...'
         s += ' => '
-        s += self.response.text if len(self.response.text) <= 40 else self.response.text[:37] + '...'
+        s = self.statement.text if len(self.statement.text) <= 20 else self.statement.text[:17] + '...'
         return s

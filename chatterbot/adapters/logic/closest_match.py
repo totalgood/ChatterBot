@@ -44,6 +44,7 @@ class ClosestMatchAdapter(BaseMatchAdapter):
                 closest_match = statement
 
         closest_match.extra_data = {'input_statement_text': input_statement.text}
+
         # Convert the confidence integer to a percent
         confidence /= 100.0
 

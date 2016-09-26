@@ -11,7 +11,7 @@ class StatementAdmin(admin.ModelAdmin):
 
 @admin.register(Response)
 class ResponseAdmin(admin.ModelAdmin):
-    list_display = ('statement', 'response', 'occurrence', 'created', 'modified', )
+    list_display = ('statement', 'response_to', 'occurrence', 'created', 'modified', )
 
 
 @admin.register(ChatUser)

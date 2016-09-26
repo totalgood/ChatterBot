@@ -19,7 +19,7 @@ class DjangoStorageAdapter(StorageAdapter):
 
         for response_object in statement_model.in_response_to.all():
             statement.add_response(Response(
-                response_object.response.text,
+                response_object.response_to.text,
                 occurrence=response_object.occurrence
             ))
 

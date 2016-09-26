@@ -37,26 +37,33 @@ class Statement(object):
         """
         self.extra_data[key] = value
 
-    def add_response(self, response):
+    def add_response_to(self, response_to):
         """
         Add the response to the list if it does not already exist.
         """
-        if not isinstance(response, Response):
+        if not isinstance(response_to, Response):
             raise Statement.InvalidTypeException(
                 'A {} was recieved when a {} instance was expected'.format(
-                    type(response),
+                    type(response_to),
                     type(Response(''))
                 )
             )
 
-        updated = False
+        # # this may not work for Response Django Model instances without overriding __equal__ there too
+        # try:
+        #     self.in_response_to[self.in_response_to.index(response_to)].occurrence += 1
+        # except:
+        #     self.in_response_to.append(response_to)
+
+        # FIXME: This won't scale!
+        #        Instead, self.in_response_to should be a collections.Counter() dict
         for index in range(0, len(self.in_response_to)):
-            if response.text == self.in_response_to[index].text:
+            if response_to.text == self.in_response_to[index].text:
                 self.in_response_to[index].occurrence += 1
                 updated = True
 
         if not updated:
-            self.in_response_to.append(response)
+            self.in_response_to.append(response_to)
 
     def remove_response(self, response_text):
         """
