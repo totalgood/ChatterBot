@@ -31,7 +31,7 @@ class ApproximateSentenceMatchAdapter(BaseMatchAdapter):
     """
 
     def __init__(self, **kwargs):
-        super(ClosestMatchAdapter, self).__init__(**kwargs)
+        super(ApproximateSentenceMatchAdapter, self).__init__(**kwargs)
         # Get default English stopwords and extend with punctuation
         self.stopwords = nltk.corpus.stopwords.words('english')
         self.stopwords.extend(string.punctuation)

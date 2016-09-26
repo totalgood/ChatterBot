@@ -8,16 +8,12 @@ class Statement(object):
     phrase that someone can say.
     """
 
-    def __init__(self, text, **kwargs):
+    def __init__(self, text, in_response_to=(), **kwargs):
         self.text = text
-        self.in_response_to = kwargs.get("in_response_to", [])
+        self.in_response_to = list(in_response_to)
+        # self.in_response_to_text = list(kwargs.pop('in_response_to_text', )
 
-        self.extra_data = {}
-
-        if "in_response_to" in kwargs:
-            del(kwargs["in_response_to"])
-
-        self.extra_data.update(kwargs)
+        self.extra_data = dict(kwargs)
 
     def __str__(self):
         return self.text

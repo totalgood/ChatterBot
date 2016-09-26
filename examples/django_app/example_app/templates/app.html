@@ -73,10 +73,18 @@
         });
 
         $submit.done(function(statement) {
-            var $row = $rowTemplate.clone();
+            console.log(statement)
 
-            $row.text(statement.text);
-            $chatlog.append($row);
+            var $response_to_row = $rowTemplate.clone();
+            var in_response_to = statement.in_response_to[0]
+            $response_to_row.text("You: " + statement.input_statement_text +
+                                  " => " + in_response_to.text +
+                                  " (" + in_response_to.occurrence + ")");
+            $chatlog.append($response_to_row);
+
+            var $response_row = $rowTemplate.clone();
+            $response_row.text(" Bot: " + statement.text);
+            $chatlog.append($response_row);
 
             $input.val('');
         });

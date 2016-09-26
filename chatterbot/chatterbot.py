@@ -168,6 +168,7 @@ class ChatBot(object):
 
         if input_statement.extra_data:
             response.extra_data.update(input_statement.extra_data)
+        response.extra_data['input_statement_text'] = input_statement.text
 
         previous_statement = self.get_last_response_statement()
 

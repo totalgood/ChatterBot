@@ -6,7 +6,7 @@ from .base_match import BaseMatchAdapter
 
 class ClosestMatchAdapter(BaseMatchAdapter):
     """
-    The ClosestMatchAdapter logic adapter creates a response by 
+    The ClosestMatchAdapter logic adapter creates a response by
     using fuzzywuzzy's process class to extract the most similar
     response to the input. This adapter selects a response to an
     input statement by selecting the closest known matching
@@ -43,6 +43,7 @@ class ClosestMatchAdapter(BaseMatchAdapter):
                 confidence = ratio
                 closest_match = statement
 
+        closest_match.extra_data = {'input_statement_text': input_statement.text}
         # Convert the confidence integer to a percent
         confidence /= 100.0
 

@@ -9,4 +9,3 @@ urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
     url(r'^api/chatterbot/', include(chatterbot_urls, namespace='chatterbot')),
 ]
-
