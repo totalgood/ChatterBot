@@ -47,7 +47,7 @@ class DjangoStorageAdapter(StorageAdapter):
         for kwarg in kwargs_copy:
             value = kwargs[kwarg]
             del kwargs[kwarg]
-            kwarg = kwarg.replace('__contains', '__response__text')
+            kwarg = kwarg.replace('__contains', '__response_to__text')
             kwargs[kwarg] = value
 
         if 'in_response_to' in kwargs:
@@ -55,9 +55,9 @@ class DjangoStorageAdapter(StorageAdapter):
             del kwargs['in_response_to']
 
             if responses:
-                kwargs['in_response_to__response__text__in'] = []
+                kwargs['in_response_to__response_to__text__in'] = []
                 for response in responses:
-                    kwargs['in_response_to__response__text__in'].append(response.text)
+                    kwargs['in_response_to__response_to__text__in'].append(response.text)
             else:
                 kwargs['in_response_to'] = None
 
@@ -85,7 +85,7 @@ class DjangoStorageAdapter(StorageAdapter):
                 )
                 response_object, created = django_statement.in_response_to.get_or_create(
                     statement=statement,
-                    response=response_statement
+                    response_to=response_statement
                 )
                 response_object.occurrence = response.occurrence
                 response_object.save()
@@ -125,4 +125,3 @@ class DjangoStorageAdapter(StorageAdapter):
         Remove the database.
         """
         pass
-
