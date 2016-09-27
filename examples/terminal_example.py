@@ -1,5 +1,12 @@
-from chatterbot import ChatBot
+import os
 import logging
+
+import django
+
+from chatterbot import ChatBot
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "chatterbot_app.settings")
+django.setup()
 
 
 # Uncomment the following line to enable verbose logging

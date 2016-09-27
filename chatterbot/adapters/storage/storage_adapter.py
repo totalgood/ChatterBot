@@ -71,7 +71,7 @@ class StorageAdapter(Adapter):
         """
         raise self.AdapterMethodNotImplementedError()
 
-    def get_response_statements(self):
+    def get_responses(self):
         """
         Return only statements that are in response to another statement.
         A statement must exist which lists the closest matching statement in the
@@ -81,7 +81,7 @@ class StorageAdapter(Adapter):
         This method may be overridden by a child class to provide more a
         efficient method to get these results.
         """
-        statement_list = self.filter()
+        prompting_statements = self.filter()
 
         responses = set()
         to_remove = list()

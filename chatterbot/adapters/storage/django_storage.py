@@ -1,5 +1,9 @@
+import logging
+
 from chatterbot.adapters.storage import StorageAdapter
 from chatterbot.conversation import Statement, Response
+
+logger = logging.getLogger(__name__)
 
 
 class DjangoStorageAdapter(StorageAdapter):
@@ -11,28 +15,30 @@ class DjangoStorageAdapter(StorageAdapter):
         from chatterbot.ext.django_chatterbot.models import Statement as StatementModel
         return StatementModel.objects.count()
 
-    def model_to_object(self, statement_model):
+    def model_to_object(self, statement_record):
         """
         Convert a Django model object into a ChatterBot Statement object.
         """
-        statement = Statement(statement_model.text)
+        statement = Statement(statement_record.text)
 
-        for response_object in statement_model.in_response_to.all():
+        for response_record in statement_record.in_response_to.all():
+            # logger.info(str(response_object))
             statement.add_response(Response(
-                response_object.response_to.text,
-                occurrence=response_object.occurrence
+                response_record.statement.text,
+                occurrence=response_record.occurrence
             ))
 
         return statement
 
     def find(self, statement_text):
+        """Find any existing Django record of this statement and return a Statement object or None"""
         from chatterbot.ext.django_chatterbot.models import Statement as StatementModel
         try:
             statement = StatementModel.objects.get(
                 text=statement_text
             )
             return self.model_to_object(statement)
-        except StatementModel.DoesNotExist as e:
+        except StatementModel.DoesNotExist:
             return None
 
     def filter(self, **kwargs):
@@ -47,19 +53,18 @@ class DjangoStorageAdapter(StorageAdapter):
         for kwarg in kwargs_copy:
             value = kwargs[kwarg]
             del kwargs[kwarg]
-            kwarg = kwarg.replace('__contains', '__response_to__text')
+            kwarg = kwarg.replace('__contains', '__responses__text')
             kwargs[kwarg] = value
 
         if 'in_response_to' in kwargs:
-            responses = kwargs['in_response_to']
-            del kwargs['in_response_to']
+            prompts = kwargs.pop('in_response_to')
 
-            if responses:
-                kwargs['in_response_to__response_to__text__in'] = []
-                for response in responses:
-                    kwargs['in_response_to__response_to__text__in'].append(response.text)
+            if prompts:
+                kwargs['prompts__text__in'] = []
+                for p in prompts:
+                    kwargs['prompts__text__in'].append(p.text)
             else:
-                kwargs['in_response_to'] = None
+                kwargs['prompts'] = None
 
         statement_objects = StatementModel.objects.filter(**kwargs)
 
@@ -70,29 +75,39 @@ class DjangoStorageAdapter(StorageAdapter):
 
         return results
 
-    def update(self, statement):
+    def update(self, statement_object):
+        """Add a new statement object to Django database as Statement and Response table records"""
         from chatterbot.ext.django_chatterbot.models import Statement as StatementModel
         from chatterbot.ext.django_chatterbot.models import Response as ResponseModel
         # Do not alter the database unless writing is enabled
         if not self.read_only:
             django_statement, created = StatementModel.objects.get_or_create(
-                text=statement.text
+                text=statement_object.text
             )
 
-            for response in statement.in_response_to:
-                response_statement, created = StatementModel.objects.get_or_create(
-                    text=response.text
-                )
-                response_object, created = django_statement.in_response_to.get_or_create(
-                    statement=statement,
-                    response_to=response_statement
-                )
-                response_object.occurrence = response.occurrence
-                response_object.save()
+            # The statement could have been made in response to multiple other in_response_to statements
+            # FIXME: only update the occurence count for the one input statement this response is to,
+            #        not all the past in_response_to statements (which is what this does)
+            for in_response_to in statement_object.in_response_to:
+                logger.info("in_response_to: " + str(in_response_to))
+                # the in_response_to Response record is a directed edge or connection between 2 Statement records
+                #     from the Response.in_response_to Statement record
+                #     to the Response.statement Statement record
+                #     with occurrence number of times it has been used as a response
+                in_response_to_django_statement, created = StatementModel.objects.get_or_create(
+                    text=in_response_to.text)
+                # response_statement, created = StatementModel.objects.get_or_create(
+                #     text=in_response_to.statement.text)
+                response_record, created = ResponseModel.objects.get_or_create(
+                    statement=django_statement,
+                    response_to=in_response_to_django_statement)
+                # count has already been incremented in the RAM Response(object) instance
+                response_record.occurrence = in_response_to.occurrence
+                response_record.save()
 
             django_statement.save()
 
-        return statement
+        return statement_object
 
     def get_random(self):
         """

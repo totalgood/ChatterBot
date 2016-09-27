@@ -15,7 +15,7 @@ class NoLogic(LogicAdapter):
 
         # Get all statements that are in response to the closest match
         response_list = self.context.storage.filter(
-            in_response_to__contains=statement.text
+            prompts__contains=statement.text
         )
 
         return 1, random.choice(response_list)

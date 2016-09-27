@@ -4,14 +4,14 @@ from chatterbot.ext.django_chatterbot.models import Statement, Response, ChatUse
 
 @admin.register(Statement)
 class StatementAdmin(admin.ModelAdmin):
-    list_display = ('text', 'chat_user', 'created', 'modified', )
-    list_filter = ('text', 'chat_user', 'created', 'modified', )
-    search_fields = ('text', 'chat_user', 'created', 'modified', )
+    list_display = ('text', 'prompts', 'chat_user', 'created', 'modified', )
+    list_filter = ('text', 'prompts', 'chat_user', 'created', 'modified', )
+    search_fields = ('text', 'prompts', 'chat_user', 'created', 'modified', )
 
 
 @admin.register(Response)
 class ResponseAdmin(admin.ModelAdmin):
-    list_display = ('statement', 'response_to', 'occurrence', 'created', 'modified', )
+    list_display = ('response', 'prompt', 'occurrence', 'created', 'modified', )
 
 
 @admin.register(ChatUser)

@@ -1,6 +1,7 @@
 class Response(object):
-    """
-    A response represents a Statement this is a response to another Statement.
+    """A response represents a Statement that is a response to another Statement.
+
+    This is NOT the same as a Django Response Model object
     """
 
     def __init__(self, text, **kwargs):

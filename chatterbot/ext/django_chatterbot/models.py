@@ -101,6 +101,7 @@ class Statement(BaseModel):
     chat_user = models.ForeignKey(ChatUser, null=True)
     score = models.ForeignKey(Score, null=True)
     text = models.CharField(max_length=255)
+    responses = models.ManyToManyField('self', through='Response', symmetrical=False)
 
     def __str__(self):
         if len(self.text.strip()) > 60:
@@ -121,17 +122,19 @@ class Response(BaseModel):
     A the very least occurrences should be an FK to a meta-data table with this info.
     """
 
-    statement = models.ForeignKey(
-        'Statement',
-        related_name='in_response_to'
+    prompt = models.ForeignKey(
+        Statement,
+        verbose_name='Prompting statement',
+        related_name='prompts',  # in_response_to
     )
 
-    response_to = models.ForeignKey(
-        'Statement',
-        related_name='+'
+    # Response Statements can point to prompt Statements (prompts rel above)
+    #  but Prompt Statements cant point to responses (due to "+" below)
+    response = models.ForeignKey(
+        Statement,
+        verbose_name='Response statement',
+        related_name="+"  # + = no reverse relationship to this model from statement
     )
-
-    unique_together = (('statement', 'response_to'),)
 
     occurrence = models.PositiveIntegerField(
         help_text='Number of times this statement has been used to respond to the statement in `in_response_to`.',
@@ -139,7 +142,10 @@ class Response(BaseModel):
         )
 
     def __str__(self):
-        s = self.response_to.text if len(self.response_to.text) <= 40 else self.response.text[:37] + '...'
+        s = self.response.text if len(self.response.text) <= 40 else self.response.text[:37] + '...'
         s += ' => '
-        s = self.statement.text if len(self.statement.text) <= 20 else self.statement.text[:17] + '...'
+        s = self.prompt.text if len(self.prompt.text) <= 20 else self.prompt.text[:17] + '...'
         return s
+
+    class Meta:
+        unique_together = (('prompt', 'response'),)

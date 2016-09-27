@@ -52,7 +52,7 @@ class BaseMatchAdapter(TieBreaking, LogicAdapter):
 
         # Get all statements that are in response to the closest match
         response_list = self.context.storage.filter(
-            in_response_to__contains=closest_match.text
+            prompts__contains=closest_match.text
         )
 
         if response_list:

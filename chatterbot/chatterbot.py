@@ -176,9 +176,9 @@ class ChatBot(object):
             input_statement.add_response(
                 Response(previous_statement.text)
             )
-            self.logger.info(u'Adding the previous statement "{}" as response to "{}"'.format(
+            self.logger.info(u"Adding the user's statement '{}' as a new possible response to '{}'".format(
+                input_statement.text,
                 previous_statement.text,
-                input_statement.text
             ))
 
         # Update the database after selecting a response
