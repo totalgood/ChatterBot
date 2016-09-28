@@ -31,12 +31,12 @@ class Response(models.Model):
     """
 
     statement = models.ForeignKey(
-        'Statement',
+        Statement,
         related_name='in_response_to'
     )
 
     response = models.ForeignKey(
-        'Statement',
+        Statement,
         related_name='+'
     )
 
