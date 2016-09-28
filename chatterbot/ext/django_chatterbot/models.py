@@ -60,6 +60,7 @@ class Statement(BaseModel):
         null=False,
         max_length=255
     )
+    possibile = models.ManyToManyField('self', symmetric=False, through='Response')
 
     def __str__(self):
         if len(self.text.strip()) > 60:
