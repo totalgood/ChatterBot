@@ -43,8 +43,10 @@ class StorageAdapter(Adapter):
         raise self.AdapterMethodNotImplementedError()
 
     def filter(self, **kwargs):
-        """
-        Returns a list of objects from the database.
+        """ Return a list of Statement objects from the database.
+
+        Similar to django Model.objects.filter().
+
         The kwargs parameter can contain any number
         of attributes. Only objects which contain
         all listed attributes and in which all values
@@ -53,40 +55,35 @@ class StorageAdapter(Adapter):
         raise self.AdapterMethodNotImplementedError()
 
     def update(self, statement):
-        """
-        Modifies an entry in the database.
-        Creates an entry if one does not exist.
-        """
+        """Modify a Statement record in the database, creating a new one if necessary."""
         raise self.AdapterMethodNotImplementedError()
 
     def get_random(self):
-        """
-        Returns a random statement from the database
-        """
+        """Get a random Statement object from the database"""
         raise self.AdapterMethodNotImplementedError()
 
     def drop(self):
-        """
-        Drop the database attached to a given adapter.
-        """
+        """Drop (wipe clean) the database attached to a given adapter."""
         raise self.AdapterMethodNotImplementedError()
 
     def get_responses(self):
-        """
-        Return only statements that are in response to another statement.
+        """Return only statements that are in response to a prompt (preceding statement).
         A statement must exist which lists the closest matching statement in the
+
         in_response_to field. Otherwise, the logic adapter may find a closest
         matching statement that does not have a known response.
 
         This method may be overridden by a child class to provide more a
         efficient method to get these results.
         """
-        prompting_statements = self.filter()
+
+        # list all statements ever uttered by bot or human
+        all_statements = self.filter()
 
         responses = set()
         to_remove = list()
-        for statement in statement_list:
-            for response in statement.in_response_to:
+        for statement in all_statements:
+            for response in statemente.responses:
                 responses.add(response.text)
         for statement in statement_list:
             if statement.text not in responses:

@@ -23,4 +23,4 @@ class ChatUserAdmin(admin.ModelAdmin):
 
 @admin.register(Score)
 class ScoreAdmin(admin.ModelAdmin):
-    list_display = ('kindness', 'positivity', 'negativity', 'neutrality', 'readability', 'sarcasm', 'chat_age')
+    list_display = ('kindness', 'positive', 'negative', 'neutral', 'readability', 'flesch', 'kincaid', 'dale_chall', 'sarcasm', 'chat_age')

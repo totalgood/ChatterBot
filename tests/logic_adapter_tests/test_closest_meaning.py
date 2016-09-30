@@ -55,7 +55,7 @@ class ClosestMeaningAdapterTests(TestCase):
             Statement('Are you good?'),
             Statement('You are good')
         ]
-        self.adapter.context.storage.get_response_statements = MagicMock(
+        self.adapter.context.storage.get_responses = MagicMock(
             return_value=possible_choices
         )
 

@@ -73,7 +73,7 @@ class ApproximateSentenceMatchAdapter(BaseMatchAdapter):
         Takes a statement string and a list of statement strings.
         Returns the closest matching statement from the list.
         """
-        statement_list = self.context.storage.get_response_statements()
+        statement_list = self.context.storage.get_responses()
 
         if not statement_list:
             if self.has_storage_context:

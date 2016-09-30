@@ -54,44 +54,49 @@ class ChatUser(BaseModel):
 
 class Score(BaseModel):
     """Multidimensional score including sentiment (valence and intensity), readability, topic vectors, slangness, age, etc"""
-    positivity = models.FloatField(
-        help_text="Positive valence (emotion) in a statement (VADER by Hutto, C.J. & Gilbert)",
-        default=0.
-    )
-    negativity = models.FloatField(
-        help_text="Negative valence (emotion) in a statement (VADER by Hutto, C.J. & Gilbert)",
-        default=0.
-    )
-    neutrality = models.FloatField(
-        help_text="Negative valence (emotion) in a statement (VADER by Hutto, C.J. & Gilbert)",
-        default=0.
-    )
-    intensity = models.FloatField(
+
+    # VADER components
+    positive = models.FloatField(default=None, null=True, blank=True,
+        help_text="VADER positive valence (emotion) intensity in a statement (see Hutto, C.J. & Gilbert)",
+        )
+    negative = models.FloatField(default=None, null=True, blank=True,
+        help_text="VADER negative valence (emotion) intensity in a statement (see Hutto, C.J. & Gilbert)",
+        )
+    neutral = models.FloatField(default=None, null=True, blank=True,
+        help_text="VADER neutral valence (emotion) intensity in a statement (see Hutto, C.J. & Gilbert)",
+        )
+    compound = models.FloatField(default=None, null=True, blank=True,
+        help_text="VADER compound valence intensity from NLTK.SentimentIntensityAnalyzer (see Hutto, C.J. & Gilbert)",
+        )
+    flesch = models.FloatField(default=None, null=True, blank=True,
+        help_text='Flesch Reading Ease based on sylable, word, and sentence counts (from `readability.superficial_measures["readability grades"]`).',
+        )
+    kincaid = models.FloatField(default=None, null=True, blank=True,
+        help_text='Kincaid grade level (from `readbility.superficial_measures["readability grades"]`)',
+        )
+    dale_chall = models.FloatField(default=None, null=True, blank=True,
+        help_text='Readability percent, 0-100, based on occurrence of 3000 most common English words (from `textstat.dale_chall_readability_score`)',
+        )
+    intensity = models.FloatField(default=None, null=True, blank=True,
         help_text="Emotional intensity (from VADER by Hutto, C.J. & Gilbert)",
-        default=0.
-    )
-    kindness = models.FloatField(
+        )
+    kindness = models.FloatField(default=None, null=True, blank=True,
         help_text="Probability (0-1) of making a kind statement",
-        default=0.
-    )
-    sarcasm = models.FloatField(
+        )
+    sarcasm = models.FloatField(default=None, null=True, blank=True,
         help_text="Lack of sincerity in a statement",
-        default=0.
-    )
-    readability = models.FloatField(
+        )
+    readability = models.FloatField(default=None, null=True, blank=True,
         help_text="Probability (0-1) of making a kind statement",
-        default=0.
-    )
-    chat_age = models.FloatField(
+        )
+    chat_age = models.FloatField(default=None, null=True, blank=True,
         help_text="Oldfashioned-ness, negative hipness, in mean age of the utterance distribution in time",
-        default=0.
-    )
+        )
 
     def __str__(self):
-        s = 'emotion: ({} +{} -{}) * {}'.format(self.neutrality, self.postivity, self.negativity, self.intensity)
-        s += ', kindness: (+{} -{})'.format(self.kindness, self.sarcasm)
-        s += ', age: (+{} +{})'.format(self.readability, self.sarcasm)
-
+        s = 'emotion: ({:.2f} +{:.2f} -{:.2f}) * {:.2f}'.format(self.neutral or 0, self.positive or 0, self.negative or 0, self.intensity or 0)
+        s += ', readability: ({:.1f} {:.1f} {:.1f})'.format(self.flesch or 0, self.kincaid or 0, self.dale_chall or 0)
+        s += ', kindness: (+{} -{})'.format(self.kindness or 0, self.sarcasm or 0)
         return s
 
 
@@ -99,20 +104,22 @@ class Statement(BaseModel):
     """A short (<255) chat message, tweet, forum post, etc"""
 
     chat_user = models.ForeignKey(ChatUser, null=True)
+    score = models.OneToOneField(
+        Score, on_delete=models.CASCADE, primary_key=True)
     score = models.ForeignKey(Score, null=True)
     text = models.CharField(max_length=255)
     responses = models.ManyToManyField('self', through='Response', symmetrical=False)
 
     def __str__(self):
-        if len(self.text.strip()) > 60:
-            return '{}...'.format(self.text[:57])
+        if len(self.text.strip()) > 128:
+            return '{}...'.format(self.text[:125])
         elif len(self.text.strip()) > 0:
             return self.text
         return '<empty>'
 
 
 class Response(BaseModel):
-    """Connection between a response and the statement that triggered it
+    """Connection from a prompting statement to the response that it invoked
 
     Comparble to a ManyToMany "through" table, but without the M2M indexing/relations.
 
@@ -125,7 +132,7 @@ class Response(BaseModel):
     prompt = models.ForeignKey(
         Statement,
         verbose_name='Prompting statement',
-        related_name='prompts',  # in_response_to
+        related_name='in_response_to',  # "+" prevents link to prompting statement from response statement
     )
 
     # Response Statements can point to prompt Statements (prompts rel above)
@@ -133,7 +140,6 @@ class Response(BaseModel):
     response = models.ForeignKey(
         Statement,
         verbose_name='Response statement',
-        related_name="+"  # + = no reverse relationship to this model from statement
     )
 
     occurrence = models.PositiveIntegerField(
@@ -142,9 +148,9 @@ class Response(BaseModel):
         )
 
     def __str__(self):
-        s = self.response.text if len(self.response.text) <= 40 else self.response.text[:37] + '...'
+        s = self.response.text if len(self.response.text) <= 64 else self.response.text[:61] + '...'
         s += ' => '
-        s = self.prompt.text if len(self.prompt.text) <= 20 else self.prompt.text[:17] + '...'
+        s = self.prompt.text if len(self.prompt.text) <= 32 else self.prompt.text[:29] + '...'
         return s
 
     class Meta:

@@ -232,7 +232,7 @@ class MongoDatabaseAdapterTestCase(MongoAdapterTestCase):
         for statement in statement_list:
             self.adapter.update(statement)
 
-        responses = self.adapter.get_response_statements()
+        responses = self.adapter.get_responses()
 
         self.assertEqual(len(responses), 2)
         self.assertIn("This is a phone.", responses)

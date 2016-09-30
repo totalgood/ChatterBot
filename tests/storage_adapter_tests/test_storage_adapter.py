@@ -2,6 +2,7 @@ from unittest import TestCase
 from chatterbot.adapters.storage import StorageAdapter
 from chatterbot.conversation import Statement, Response
 
+
 class StorageAdapterTestCase(TestCase):
     """
     This test case is for the StorageAdapter base class.
@@ -40,7 +41,7 @@ class StorageAdapterTestCase(TestCase):
 
     def test_get_response_statements(self):
         with self.assertRaises(StorageAdapter.AdapterMethodNotImplementedError):
-            self.adapter.get_response_statements()
+            self.adapter.get_responses()
 
     def test_drop(self):
         with self.assertRaises(StorageAdapter.AdapterMethodNotImplementedError):

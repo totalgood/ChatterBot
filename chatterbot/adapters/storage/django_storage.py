@@ -66,12 +66,12 @@ class DjangoStorageAdapter(StorageAdapter):
             else:
                 kwargs['prompts'] = None
 
-        statement_objects = StatementModel.objects.filter(**kwargs)
+        statement_records = StatementModel.objects.filter(**kwargs)
 
         results = []
 
-        for statement_object in statement_objects:
-            results.append(self.model_to_object(statement_object))
+        for statement_record in statement_records:
+            results.append(self.model_to_object(statement_record))
 
         return results
 

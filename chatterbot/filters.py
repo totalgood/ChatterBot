@@ -12,11 +12,7 @@ class Filter(object):
 
 
 class RepetitiveResponseFilter(Filter):
-    """
-    A filter that eliminates possibly repetitive
-    responses to prevent a chat bot from repeating
-    statements that it has recently said.
-    """
+    """Prevent a chat bot from repeating recent statements."""
 
     def filter_selection(self, chatterbot):
 
@@ -25,7 +21,7 @@ class RepetitiveResponseFilter(Filter):
 
         text_of_recent_responses = []
 
-        for statement, response in chatterbot.recent_statements:
+        for prompt, response in chatterbot.recent_statements:
             text_of_recent_responses.append(response.text)
 
         query = chatterbot.storage.base_query.statement_text_not_in(
@@ -33,4 +29,3 @@ class RepetitiveResponseFilter(Filter):
         )
 
         return query
-
