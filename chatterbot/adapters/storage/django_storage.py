@@ -2,7 +2,8 @@ import logging
 
 from chatterbot.adapters.storage import StorageAdapter
 from chatterbot.conversation import Statement, Response
-from chatterbot.ext.django_chatterbot.models import Statement as StatementModel
+# Can't load Django models until the app has been setup (settings.configure())
+# from chatterbot.ext.django_chatterbot.models import Statement as StatementModel
 # from chatterbot.ext.django_chatterbot.models import Response as ResponseModel
 
 # logging.basicConfig(level=logging.INFO)
@@ -81,24 +82,27 @@ class DjangoStorageAdapter(StorageAdapter):
     def update(self, statement):
         # Do not alter the database unless writing is enabled
         if not self.read_only:
+            from chatterbot.ext.django_chatterbot.models import Statement as StatementModel
+            # from chatterbot.ext.django_chatterbot.models import Response as ResponseModel
+
             django_statement, created = StatementModel.objects.get_or_create(
                 text=statement.text
             )
 
-            for response in statement.in_response_to:
-                response_statement_record, created = StatementModel.objects.get_or_create(
-                    text=response.text
-                )
-                if created:
-                    response_statement_record.save()
-                response_record, created = django_statement.in_response_to.get_or_create(
-                    statement=statement,
-                    response=response_statement_record
-                )
-                response_record.occurrence = response.occurrence
-                response_record.save()
+            # for response in statement.in_response_to:
+            #     response_statement_record, created = StatementModel.objects.get_or_create(
+            #         text=response.text
+            #     )
+            #     if created:
+            #         response_statement_record.save()
+            #     response_record, created = django_statement.in_response_to.get_or_create(
+            #         statement=statement,
+            #         response=response_statement_record
+            #     )
+            #     response_record.occurrence = response.occurrence
+            #     response_record.save()
 
-            django_statement.save()
+            # django_statement.save()
 
         return statement
 
