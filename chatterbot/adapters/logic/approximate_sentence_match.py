@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from chatterbot.adapters import Adapter
 from .base_match import BaseMatchAdapter
 from nltk.corpus import wordnet
 import nltk.corpus
@@ -31,7 +30,7 @@ class ApproximateSentenceMatchAdapter(BaseMatchAdapter):
     """
 
     def __init__(self, **kwargs):
-        super(ClosestMatchAdapter, self).__init__(**kwargs)
+        super(AppoximateSentenceMatchAdapter, self).__init__(**kwargs)
         # Get default English stopwords and extend with punctuation
         self.stopwords = nltk.corpus.stopwords.words('english')
         self.stopwords.extend(string.punctuation)
@@ -49,7 +48,6 @@ class ApproximateSentenceMatchAdapter(BaseMatchAdapter):
             return (pos_tag[0], wordnet.ADV)
         else:
             return (pos_tag[0], wordnet.NOUN)
-
 
     def is_ci_lemma_stopword_set_match(self,a, b, threshold=0.5):
         """Check if a and b are matches."""

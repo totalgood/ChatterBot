@@ -7,21 +7,17 @@ from .base_match import BaseMatchAdapter
 
 
 class ClosestMatchAdapter(BaseMatchAdapter):
-    """
-    The ClosestMatchAdapter logic adapter creates a response by
-    using fuzzywuzzy's process class to extract the most similar
-    response to the input. This adapter selects a response to an
-    input statement by selecting the closest known matching
-    statement based on the Levenshtein Distance between the text
-    of each statement.
+    """ Compose response based on the historical response for statements most similar to the input
+
+    Use fuzzywuzzy's process class (Levenshtein distance) to find the most similar response to the input
+    and that statement object's response can then be used by the caller to respond.
+
+    A thinking "response_time" is configurable to maintain a reasonable chat pace.
     """
     bot_response_time = 1.0
 
     def get(self, input_statement):
-        """
-        Takes a statement string and a list of statement strings.
-        Returns the closest matching statement from the list.
-        """
+        """ Takes a statement object and findes the closest match in the storage adapter """
         t0 = time.time()
         statement_list = self.context.storage.get_response_statements()
 
@@ -38,16 +34,18 @@ class ClosestMatchAdapter(BaseMatchAdapter):
 
         confidence = -1
         closest_match = input_statement
+        input_statement_text = input_statement.text.lower()
 
+        # fuzzywuzzy has a bestmatch method that's much faster than this
         # Find the closest matching known statement
-        for statement in statement_list:
-            ratio = fuzz.ratio(input_statement.text.lower(), statement.text.lower())
+        for historical_statement in statement_list:
+            ratio = fuzz.ratio(input_statement_text, historical_statement.text.lower())
 
             if ratio > confidence:
                 confidence = ratio
-                closest_match = statement
+                closest_match = historical_statement
 
-        # Convert the confidence integer to a percent
+        # Convert the confidence integer percent to a float probability between 0.0 and 1.0
         confidence /= 100.0
 
         t1 = time.time()

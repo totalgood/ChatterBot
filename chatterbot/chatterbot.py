@@ -27,7 +27,9 @@ class ChatBot(object):
                                      )
 
         logic_adapters = kwargs.get('logic_adapters', [
-            'chatterbot.adapters.logic.ClosestMatchAdapter',
+            # "chatterbot.adapters.logic.MathematicalEvaluation",
+            # "chatterbot.adapters.logic.TimeLogicAdapter",
+            "chatterbot.adapters.logic.ClosestMatchAdapter"
         ])
 
         input_adapter = kwargs.get('input_adapter',
