@@ -24,25 +24,25 @@ class User(BaseModel):
         max_length=128,
     )
     gender = models.CharField(
-        help="Categorical variable to facilitate personality learning",
+        help_text="Categorical variable to facilitate personality learning",
         blank=True,
         null=False,
         max_length=32,
     )
     chat_age = models.FloatField(
-        help="Scalar between 0 and 100 estimating age of a user based solely on their chat style, word choice.",
+        help_text="Scalar between 0 and 100 estimating age of a user based solely on their chat style, word choice.",
         blank=True,
         null=True,
         max_length=32,
     )
     kindness = models.FloatField(
-        help="Probability (0-1) of making a kind statement",
+        help_text="Probability (0-1) of making a kind statement",
         default=0.,
         null=False,
         blank=True,
     )
     hurtfulness = models.FloatField(
-        help="Probability (0-1) of making an unkind, cruel, hurtful statement",
+        help_text="Probability (0-1) of making an unkind, cruel, hurtful statement",
         default=0.
     )
 
@@ -53,7 +53,7 @@ class User(BaseModel):
 class Statement(BaseModel):
     """A short (<255) chat message, tweet, forum post, etc"""
 
-    user = models.ForeignKey('User')
+    user = models.ForeignKey('User', default=None, null=True)
     text = models.CharField(
         unique=False,
         blank=False,
