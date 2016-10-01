@@ -175,7 +175,7 @@ class ChatBot(object):
             input_statement.add_response(
                 Response(previous_statement.text)
             )
-            self.logger.info(u'Adding the previous statement "{}" as response to "{}"'.format(
+            self.logger.info(u'Adding the statement "{}" as a possible response to the previous statement "{}"'.format(
                 previous_statement.text,
                 input_statement.text
             ))

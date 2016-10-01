@@ -1,4 +1,9 @@
+import logging
+
 from django.db import models
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 class Statement(models.Model):
@@ -10,6 +15,8 @@ class Statement(models.Model):
         null=False,
         max_length=255
     )
+
+    responses = models.ManyToManyField('self', through='Response', symmetrical=False, default=None)
 
     def __str__(self):
         if len(self.text.strip()) > 60:
@@ -40,12 +47,13 @@ class Response(models.Model):
         related_name='+'
     )
 
-    unique_together = (('statement', 'response'),)
-
     occurrence = models.PositiveIntegerField(default=0)
 
     def __str__(self):
-        s = self.statement.text if len(self.statement.text) <= 20 else self.statement.text[:17] + '...'
+        s = self.statement.text if len(self.statement.text) <= 64 else self.statement.text[:61] + '...'
         s += ' => '
-        s += self.response.text if len(self.response.text) <= 40 else self.response.text[:37] + '...'
+        s += self.response.text if len(self.response.text) <= 64 else self.response.text[:61] + '...'
         return s
+
+    class Meta:
+        unique_together = (('statement', 'response'),)
