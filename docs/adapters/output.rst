@@ -42,6 +42,21 @@ communicate with the chat bot.
 
 .. _hipchat-output-adapter:
 
+Gitter Adapter
+==============
+
+.. autofunction:: chatterbot.adapters.output.Gitter
+
+.. code-block:: python
+
+   chatbot = ChatBot(
+       "My ChatterBot",
+       output_adapter="chatterbot.adapters.output.Gitter",
+       gitter_api_token="my-gitter-api-token",
+       gitter_room="my-room-name",
+       gitter_only_respond_to_mentions=True,
+   )
+
 HipChat Adapter
 ===============
 
@@ -56,10 +71,30 @@ Be sure to also see the documentation for the :ref:`HipChat input adapter <hipch
 
    chatbot = ChatBot(
        "My ChatterBot",
-       input_adapter="chatterbot.adapters.output.HipChat",
+       output_adapter="chatterbot.adapters.output.HipChat",
        hipchat_host="https://mydomain.hipchat.com",
        hipchat_room="my-room-name",
        hipchat_access_token="my-hipchat-access-token",
+   )
+
+Microsoft Adapter
+===============
+
+.. autofunction:: chatterbot.adapters.output.Microsoft
+
+This is an output adapter that allows a ChatterBot instance to send responses
+to a `Microsoft`_ using *Direct Line protocol*.
+
+Be sure to also see the documentation for the :ref:`Microsoft input adapter <microsoft-input-adapter>`.
+
+.. code-block:: python
+
+   chatbot = ChatBot(
+       "My ChatterBot",
+       output_adapter="chatterbot.adapters.output.Microsoft",
+       direct_line_host="https://directline.botframework.com",
+       direct_line_conservationId="IEyJvnDULgn",
+       direct_line_token_or_secret="RCurR_XV9ZA.cwA.BKA.iaJrC8xpy8qbOF5xnR2vtCX7CZj0LdjAPGfiCpg4Fv0",
    )
 
 Mailgun adapter
@@ -80,24 +115,6 @@ Check out the `chatterbot-voice`_ package for more information on how to make
 your chat bot interact verbally with others.
 
 .. _chatterbot-voice: https://github.com/gunthercox/chatterbot-voice
-
-Creating your own output adapter
-================================
-
-.. autofunction:: chatterbot.adapters.output.OutputAdapter
-
-To create your own output adapter you must create a new class that
-inherits from the OutputAdapter base class and you must override
-the `process_response` method to return a :ref:`Statement <conversation_statements>` object.
-
-Note that you may need to extend the `__init__` method of your custom output
-adapter if you intend to save a kwarg parameter that was passed into
-the chat bot's constructor.
-(An API key might be an example of a parameter you would want to access here.)
-
-.. literalinclude:: ../../chatterbot/adapters/output/output_adapter.py
-   :language: python
-
-.. _chatterbot-voice: https://github.com/gunthercox/chatterbot-voice
 .. _`Mailgun API`: https://documentation.mailgun.com/api_reference.html
 .. _HipChat: https://www.hipchat.com/
+.. _Microsoft: https://docs.botframework.com/en-us/restapi/directline/#/Conversations

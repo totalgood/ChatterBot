@@ -2,7 +2,6 @@ from .adapters.storage import StorageAdapter
 from .adapters.logic import LogicAdapter, MultiLogicAdapter
 from .adapters.input import InputAdapter
 from .adapters.output import OutputAdapter
-from .conversation import Statement, Response
 from .utils.queues import ResponseQueue
 from .utils.module_loading import import_module
 import logging
@@ -42,23 +41,19 @@ class ChatBot(object):
         # The output adapter must be an instance of OutputAdapter
         self.validate_adapter_class(output_adapter, OutputAdapter)
 
-        StorageAdapterClass = import_module(storage_adapter)
-        InputAdapterClass = import_module(input_adapter)
-        OutputAdapterClass = import_module(output_adapter)
-
-        self.storage = StorageAdapterClass(**kwargs)
         self.logic = MultiLogicAdapter(**kwargs)
-        self.input = InputAdapterClass(**kwargs)
-        self.output = OutputAdapterClass(**kwargs)
+        self.storage = self.initialize_class(storage_adapter, **kwargs)
+        self.input = self.initialize_class(input_adapter, **kwargs)
+        self.output = self.initialize_class(output_adapter, **kwargs)
 
         filters = kwargs.get('filters', tuple())
         self.filters = (import_module(F)() for F in filters)
 
         # Add required system logic adapter
-        self.add_adapter('chatterbot.adapters.logic.NoKnowledgeAdapter')
+        self.add_logic_adapter('chatterbot.adapters.logic.NoKnowledgeAdapter')
 
         for adapter in logic_adapters:
-            self.add_adapter(adapter, **kwargs)
+            self.add_logic_adapter(adapter, **kwargs)
 
         # Share context information such as the name, the current conversation,
         # or access to other adapters with each of the adapters
@@ -70,16 +65,60 @@ class ChatBot(object):
         # Use specified trainer or fall back to the default
         trainer = kwargs.get('trainer', 'chatterbot.trainers.Trainer')
         TrainerClass = import_module(trainer)
-        self.trainer = TrainerClass(self.storage)
+        self.trainer = TrainerClass(self.storage, **kwargs)
+        self.training_data = kwargs.get('training_data')
 
         self.logger = kwargs.get('logger', logging.getLogger(__name__))
 
-    def add_adapter(self, adapter, **kwargs):
-        self.validate_adapter_class(adapter, LogicAdapter)
+    def initialize_class(self, adapter_data, **kwargs):
 
-        NewAdapter = import_module(adapter)
-        adapter = NewAdapter(**kwargs)
+        if isinstance(adapter_data, dict):
+            import_path = adapter_data.pop('import_path')
+            adapter_data.update(kwargs)
+            Class = import_module(import_path)
+
+            return Class(**adapter_data)
+        else:
+            Class = import_module(adapter_data)
+
+            return Class(**kwargs)
+
+    def add_logic_adapter(self, adapter, **kwargs):
+        self.validate_adapter_class(adapter, LogicAdapter)
+        adapter = self.initialize_class(adapter, **kwargs)
         self.logic.add_adapter(adapter)
+
+    def insert_logic_adapter(self, logic_adapter, insert_index, **kwargs):
+        """
+        Adds a logic adapter at a specified index.
+
+        :param logic_adapter: The string path to the logic adapter to add.
+        :type logic_adapter: class
+
+        :param insert_index: The index to insert the logic adapter into the list at.
+        :type insert_index: int
+
+        :raises: InvalidAdapterException
+        """
+        self.validate_adapter_class(logic_adapter, LogicAdapter)
+
+        NewAdapter = import_module(logic_adapter)
+        adapter = NewAdapter(**kwargs)
+
+        self.logic.adapters.insert(insert_index, adapter)
+
+    def remove_logic_adapter(self, adapter_name):
+        """
+        Removes a logic adapter from the chat bot.
+
+        :param adapter_name: The class name of the adapter to remove.
+        :type adapter_name: str
+        """
+        for index, adapter in enumerate(self.logic.adapters):
+            if adapter_name == type(adapter).__name__:
+                del(self.logic.adapters[index])
+                return True
+        return False
 
     def validate_adapter_class(self, validate_class, adapter_class):
         """
@@ -95,6 +134,18 @@ class ChatBot(object):
         :raises: InvalidAdapterException
         """
         from .adapters import Adapter
+
+        # If a dictionary was passed in, check if it has an import_path attribute
+        if isinstance(validate_class, dict):
+            origional_data = validate_class.copy()
+            validate_class = validate_class.get('import_path')
+
+            if not validate_class:
+                raise self.InvalidAdapterException(
+                    'The dictionary {} must contain a value for "import_path"'.format(
+                        str(origional_data)
+                    )
+                )
 
         if not issubclass(import_module(validate_class), Adapter):
             raise self.InvalidAdapterException(
@@ -145,54 +196,62 @@ class ChatBot(object):
         Return the bot's response based on the input.
 
         :param input_item: An input value.
-        :returns: Statement -- the response to the input.
+        :returns: A response to the input.
+        :rtype: Statement
         """
-        input_statement = self.input.process_input(input_item)
-        self.logger.info(u'Recieved input statement: {}'.format(input_statement.text))
+        input_statement = self.input.process_input_statement(input_item)
 
+        statement, response, confidence = self.generate_response(input_statement)
+
+        # Learn that the user's input was a valid response to the chat bot's previous output
+        self.learn_response(statement)
+
+        self.recent_statements.append(
+            (statement, response, )
+        )
+
+        # Process the response output with the output adapter
+        return self.output.process_response(response, confidence)
+
+    def generate_response(self, input_statement):
+        """
+        Return a response based on a given input statement.
+        """
         self.storage.generate_base_query(self)
-
-        existing_statement = self.storage.find(input_statement.text)
-
-        if existing_statement:
-            self.logger.info(u'"{}" is a known statement'.format(input_statement.text))
-            if input_statement.extra_data:
-                existing_statement.extra_data.update(input_statement.extra_data)
-            input_statement = existing_statement
-        else:
-            self.logger.info(u'"{}" is not a known statement'.format(input_statement.text))
 
         # Select a response to the input statement
         confidence, response = self.logic.process(input_statement)
-        self.logger.info(u'Selecting "{}" as response with a confidence of {}'.format(response.text, confidence))
 
-        if input_statement.extra_data:
-            response.extra_data.update(input_statement.extra_data)
+        return input_statement, response, confidence
+
+    def learn_response(self, statement):
+        """
+        Learn that the statement provided is a valid response.
+        """
+        from .conversation import Response
 
         previous_statement = self.get_last_response_statement()
 
         if previous_statement:
-            input_statement.add_response(
+            statement.add_response(
                 Response(previous_statement.text)
             )
-            self.logger.info(u'Adding the previous statement "{}" as response to "{}"'.format(
-                previous_statement.text,
-                input_statement.text
+            self.logger.info(u'Adding "{}" as a response to "{}"'.format(
+                statement.text,
+                previous_statement.text
             ))
 
         # Update the database after selecting a response
-        self.storage.update(input_statement)
-
-        self.recent_statements.append(
-            (input_statement, response, )
-        )
-
-        # Process the response output with the output adapter
-        return self.output.process_response(response)
+        self.storage.update(statement)
 
     def set_trainer(self, training_class, **kwargs):
         """
         Set the module used to train the chatbot.
+
+        :param training_class: The training class to use for the chat bot.
+        :type training_class: chatterbot.trainers.Trainer
+
+        :param \**kwargs: Any parameters that should be passed to the training class.
         """
         self.trainer = training_class(self.storage, **kwargs)
 
@@ -202,6 +261,16 @@ class ChatBot(object):
         Proxy method to the chat bot's trainer class.
         """
         return self.trainer.train
+
+    @classmethod
+    def from_config(self, config_file_path):
+        import json
+        with open(config_file_path, 'r') as config_file:
+            data = json.load(config_file)
+
+        name = data.pop('name')
+
+        return ChatBot(name, **data)
 
     class InvalidAdapterException(Exception):
 

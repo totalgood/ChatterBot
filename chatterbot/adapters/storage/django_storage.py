@@ -1,11 +1,14 @@
 from chatterbot.adapters.storage import StorageAdapter
 from chatterbot.conversation import Statement, Response
+import json
 
 
 class DjangoStorageAdapter(StorageAdapter):
 
     def __init__(self, **kwargs):
         super(DjangoStorageAdapter, self).__init__(**kwargs)
+
+        self.adapter_supports_queries = False
 
     def count(self):
         from chatterbot.ext.django_chatterbot.models import Statement as StatementModel
@@ -15,7 +18,10 @@ class DjangoStorageAdapter(StorageAdapter):
         """
         Convert a Django model object into a ChatterBot Statement object.
         """
-        statement = Statement(statement_model.text)
+        statement = Statement(
+            statement_model.text,
+            extra_data=json.loads(statement_model.extra_data, encoding='utf8')
+        )
 
         for response_object in statement_model.in_response_to.all():
             statement.add_response(Response(
@@ -70,13 +76,14 @@ class DjangoStorageAdapter(StorageAdapter):
 
         return results
 
-    def update(self, statement):
+    def update(self, statement, **kwargs):
         from chatterbot.ext.django_chatterbot.models import Statement as StatementModel
         from chatterbot.ext.django_chatterbot.models import Response as ResponseModel
         # Do not alter the database unless writing is enabled
         if not self.read_only:
             django_statement, created = StatementModel.objects.get_or_create(
-                text=statement.text
+                text=statement.text,
+                extra_data=json.dumps(statement.extra_data)
             )
 
             for response in statement.in_response_to:
@@ -122,7 +129,10 @@ class DjangoStorageAdapter(StorageAdapter):
 
     def drop(self):
         """
-        Remove the database.
+        Remove all data from the database.
         """
-        pass
+        from chatterbot.ext.django_chatterbot.models import Statement as StatementModel
+        from chatterbot.ext.django_chatterbot.models import Response as ResponseModel        
 
+        StatementModel.objects.all().delete()
+        ResponseModel.objects.all().delete()

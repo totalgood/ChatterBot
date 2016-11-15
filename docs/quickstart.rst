@@ -1,9 +1,14 @@
-===========
-Quick Start
-===========
+=================
+Quick Start Guide
+=================
 
 Create a new chat bot
 =====================
+
+.. note::
+
+   If you are using Python 2.7, be sure that the unicode header is the first line of
+   your Python file: :code:`# -*- coding: utf-8 -*-`
 
 .. code-block:: python
 

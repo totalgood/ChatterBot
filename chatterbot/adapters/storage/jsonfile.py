@@ -13,13 +13,16 @@ class JsonFileStorageAdapter(StorageAdapter):
     def __init__(self, **kwargs):
         super(JsonFileStorageAdapter, self).__init__(**kwargs)
 
-        warnings.warn(
-            'The JsonFileStorageAdapter is not recommended for production application environments.',
-            self.UnsuitableForProductionWarning
-        )
+        if not kwargs.get('silence_performance_warning', False):
+            warnings.warn(
+                'The JsonFileStorageAdapter is not recommended for production application environments.',
+                self.UnsuitableForProductionWarning
+            )
 
         database_path = self.kwargs.get('database', 'database.db')
         self.database = Database(database_path)
+
+        self.adapter_supports_queries = False
 
     def _keys(self):
         # The value has to be cast as a list for Python 3 compatibility
@@ -58,16 +61,20 @@ class JsonFileStorageAdapter(StorageAdapter):
         proxy_statement = Statement('')
 
         for response in response_list:
-            text = response['text']
-            del(response['text'])
+            data = response.copy()
+            text = data['text']
+            del(data['text'])
 
             proxy_statement.add_response(
-                Response(text, **response)
+                Response(text, **data)
             )
 
         return proxy_statement.in_response_to
 
     def json_to_object(self, statement_data):
+        
+        # Don't modify the referenced object
+        statement_data = statement_data.copy()
 
         # Build the objects for the response list
         statement_data['in_response_to'] = self.deserialize_responses(
@@ -122,7 +129,7 @@ class JsonFileStorageAdapter(StorageAdapter):
 
         return results
 
-    def update(self, statement):
+    def update(self, statement, **kwargs):
         # Do not alter the database unless writing is enabled
         if not self.read_only:
             data = statement.serialize()

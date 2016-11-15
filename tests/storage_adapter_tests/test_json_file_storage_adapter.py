@@ -14,7 +14,10 @@ class JsonAdapterTestCase(TestCase):
         # Generate a random name for the database
         database_name = str(randint(0, 9000))
 
-        self.adapter = JsonFileStorageAdapter(database=database_name)
+        self.adapter = JsonFileStorageAdapter(
+            database=database_name,
+            silence_performance_warning=True
+        )
 
     def tearDown(self):
         """
@@ -24,6 +27,19 @@ class JsonAdapterTestCase(TestCase):
 
 
 class JsonFileStorageAdapterTestCase(JsonAdapterTestCase):
+
+    def test_json_to_object(self):
+        data = {
+            'text': 'Test statement',
+            'in_response_to': [
+                {'text': 'Test response'}
+            ]
+        }
+        obj = self.adapter.json_to_object(data)
+
+        self.assertEqual(obj.text, data['text'])
+        self.assertEqual(len(obj.in_response_to), 1)
+        self.assertEqual(obj.in_response_to[0].text, data['in_response_to'][0]['text'])
 
     def test_count_returns_zero(self):
         """

@@ -4,13 +4,7 @@
   <head>
     <title>Django ChatterBot Example</title>
     <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}"/>
-
-    <!-- Alternate the background color of the output rows -->
-    <style>
-    .list-group-item:nth-child(even) {
-      background-color: #eee;
-    }
-    </style>
+    <link rel="stylesheet" href="{% static 'css/custom.css' %}"/>
   </head>
   <body>
 
@@ -59,25 +53,32 @@
       var $input = $('.js-text');
       var $sayButton = $('.js-say');
 
-      var $rowTemplate = $('<li class="list-group-item"></li>');
+      function createRow(text) {
+        var $row = $('<li class="list-group-item"></li>');
+
+        $row.text(text);
+        $chatlog.append($row);
+      }
 
       function submitInput() {
         var inputData = {
           'text': $input.val()
         }
 
+        // Display the user's input on the web page
+        createRow(inputData.text);
+
         var $submit = $.ajax({
           type: 'POST',
           url: chatterbotUrl,
-          data: inputData,
+          data: JSON.stringify(inputData),
+          contentType: 'application/json'
         });
 
         $submit.done(function(statement) {
-            var $row = $rowTemplate.clone();
+            createRow(statement.text);
 
-            $row.text(statement.text);
-            $chatlog.append($row);
-
+            // Clear the input field
             $input.val('');
         });
 

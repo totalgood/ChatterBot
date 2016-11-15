@@ -21,8 +21,8 @@ If you instantiate your chatterbot with the parameter `read_only=True`
 then the database will not be altered when input is given to the chatterbot.
 The `read_only` parameter is set to false by default.
 
-Json Database Adapter
-=====================
+Json File Storage Adapter
+=========================
 
 .. autofunction:: chatterbot.adapters.storage.JsonFileStorageAdapter
 
@@ -31,6 +31,13 @@ Json Database Adapter
 The JSON Database adapter requires an additional parameter (`database`) to be
 passed to the ChatterBot constructor. This storage adapter uses a local file
 database so this parameter is needed to specify the location of the file.
+
+.. note::
+
+   The json file storage adapter will display an UnsuitableForProductionWarning
+   when it is initialized because it is not intended for use in large scale production
+   applications. You can silence this warning by setting `silence_performance_warning=True`
+   when initializing the adapter.
 
 Mongo Database Adapter
 ======================
@@ -59,46 +66,3 @@ can set the `database_uri` parameter to the uri of your database.
 .. code-block:: python
 
    database_uri='mongodb://example.com:8100/'
-
-Twitter Adapter
-==============================
-
-.. autofunction:: chatterbot.adapters.storage.TwitterAdapter
-
-"chatterbot.adapters.storage.TwitterAdapter"
-
-Create an app from you twiter acccount, Once created
-It will have following app credentails that are required to work with 
-TwitterAdapter.
-
-twitter_consumer_key
---------------------
-Consumer key of twitter app.
-
-twitter_consumer_secret
------------------------
-Consumer secret of twitter app.
-
-twitter_access_token_key
-------------------------
-Access token key of twitter app.
-
-twitter_access_token_secret
----------------------------
-Access token secret of twitter app.
-
-Creating a new storage adapter
-==============================
-
-It is fairly easy to write your own storage adapter to connect to just about
-any database or storage endpoint. To get started, you will need to create a
-new class that inherits from `StorageAdapter` which is located in
-`chatterbot.adapters.storage`.
-
-.. autofunction:: chatterbot.adapters.storage.StorageAdapter
-
-You will then need to implement the interface established by the `StorageAdapter` class.
-
-.. literalinclude:: ../../chatterbot/adapters/storage/storage_adapter.py
-   :language: python
-
